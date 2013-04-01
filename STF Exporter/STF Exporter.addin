@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<RevitAddIns>
+  <AddIn Type="Command">
+    <Text>DiaLUX STF Exporter</Text>
+    <Description>Export Revit Spaces and Light Fixtures to DiaLUX STF format</Description>
+    <Assembly>STFExporter.dll</Assembly>
+    <FullClassName>STFExporter.Command</FullClassName>
+    <ClientId>3C39185E-CDDE-4B24-8B4C-77A8DBAF855D</ClientId>
+    <VendorId>KTM</VendorId>
+    <VendorDescription>Kyle T. Morin</VendorDescription>
+  </AddIn>
+  <AddIn Type="Application">
+    <Name>Application STF Exporter</Name>
+    <Assembly>STFExporter.dll</Assembly>
+    <FullClassName>STFExporter.App</FullClassName>
+    <ClientId>EB9478F4-469C-4069-A74F-62DFB0FBC83A</ClientId>
+    <VendorId>KTM</VendorId>
+    <VendorDescription>Kyle T. Morin</VendorDescription>
+  </AddIn>
+</RevitAddIns>
