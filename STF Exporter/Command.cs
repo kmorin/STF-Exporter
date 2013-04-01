@@ -156,125 +156,14 @@ namespace STFExporter
                 var file = fs.get_Parameter(BuiltInParameter.FBX_LIGHT_PHOTOMETRIC_FILE);
                 return "1"; //for now
             }
-        }
-
-        // TODO: Implement AnalysisVisualizationFramework
-        /*
-        public void RoomPointsVis(double spacing, Reference reference, Space roomSpace, List<FamilyInstance> lightfixtures, SpatialFieldManager sfm)
-        {
-            string s = "";
-
-            Reference _ref = reference;
-            IList<UV> uvPts = new List<UV>();
-            List<double> doubleList = new List<double>();
-            IList<ValueAtPoint> valList = new List<ValueAtPoint>();
-
-            Options opt = new Options();
-            opt.ComputeReferences = true;
-
-            SpatialElement spaceElement = (SpatialElement)roomSpace;
-            GeometryElement ge = spaceElement.get_Geometry(opt);
-            GeometryObjectArray geoArr = ge.Objects;
-            Solid sol = geoArr.get_Item(0) as Solid;
-            Face _face = sol.Faces.get_Item(1) as Face;           
-            
-            BoundingBoxUV bb = _face.GetBoundingBox();
-            UV min = bb.Min;
-            UV max = bb.Max;
-
-            //// _face transform
-            UV faceCenter = new UV((max.U + min.U) / 2, (max.V + min.V) / 2);
-            Transform computeDerivatives = _face.ComputeDerivatives(faceCenter);
-            XYZ faceCenterNormal = computeDerivatives.BasisZ;
-
-            // Normalize the normal vector and multiply by 2.5 
-            XYZ faceCenterNormalMultiplied = faceCenterNormal.Normalize().Multiply(2.5);            
-            Transform _transform = Transform.get_Translation(faceCenterNormalMultiplied);
-
-            for (double u = min.U; u < max.U; u += (max.U - min.U) / 20)
-            {
-                for (double v = min.V; v < max.V; v += (max.V - min.V) / 20)
-                {
-                    UV uv = new UV(u, v);
-                    if (_face.IsInside(uv))
-                    {                        
-                        XYZ pointToCalc = _face.Evaluate(uv);
-                        double resultFC = CalcPointsFC(roomSpace, lightfixtures, pointToCalc);
-                        uvPts.Add(uv);
-                        doubleList.Add(resultFC);
-                        s += "\n" + resultFC.ToString();
-                        valList.Add(new ValueAtPoint(doubleList));
-                        doubleList.Clear();
-                    }
-                }
-            }
-
-            //Visualization framwork
-            FieldDomainPointsByUV pnts = new FieldDomainPointsByUV(uvPts);
-            FieldValues vals = new FieldValues(valList);            
-            AnalysisResultSchema resultSchema = new AnalysisResultSchema("Point by Point", "Illumination Point-By-Pont");
-
-            //Units
-            IList<string> names = new List<string> { "FC" };
-            IList<double> multipliers = new List<double> { 1 };
-            resultSchema.SetUnits(names, multipliers);
-
-            //Add field primitive to view
-            int idx = sfm.AddSpatialFieldPrimitive(_face,_transform);            
-            int idx1 = sfm.RegisterResult(resultSchema);
-            sfm.UpdateSpatialFieldPrimitive(idx, pnts, vals, idx1);
-
-            
-            //Test method to get values
-            TaskDialog.Show("Res", s);
-
-            using (Transaction tx = new Transaction(_doc))
-            {
-                tx.Start("DisplayAnalysisResults");
-                bool avs = GetOrCreateAVS();
-                tx.Commit();
-            }
-
-        }
-        */
+        }    
 
         private void SpaceInfoWriter(ElementId spaceID)
         {
             const double MAX_ROUNDING_PRECISION = 0.000000000001;
             
-            // INFO NEEDED FOR ROOM/SPACE
-            /*
-             * [ROOM.R1]
-             * Name=*SPACENAME*
-             * Height=*SPACEHEIGHT* (in meters)
-             * WorkingPlane=*WORKINGPLANE* (in meters)
-             * NrPoints= *NUMBER OF VERTEX POITNS* (ex. 4 for square room)
-             * Point1=X Y
-             * Point2=X Y
-             * Point3=X Y
-             * Point4=X Y
-             * R_Ceiling=*CEILINGREFLECTANCE* (double)
-             * --Check if any fixtures in space, if none, skip. --
-             * Lum1=LUMINAIRE.L1 (foreach luminaire in space new type)
-             * Lum1.Pos=X Y Z (in meters)
-             * Lum1.Rot=0 0 0 (need to figure out transform i guess)
-             * Lum2=LUMINAIRE.L1
-             * Lum2.Pos=
-             * Lum2.Rot=
-             * NrStruct=0
-             * NrLums=*TOTALFIXTURESINSPACE*
-             * NrFurns=0
-             * [ROOM.R2]
-             * 
-             */
-            
             //Get info from Space
             Space roomSpace = _doc.GetElement(spaceID) as Space;
-            /* Not needed
-            SpatialElementGeometryCalculator calc = new SpatialElementGeometryCalculator(_doc);
-            SpatialElementGeometryResults results = calc.CalculateSpatialElementGeometry((SpatialElement)roomSpace);
-            Solid geometry = results.GetGeometry();            
-            */
 
             //VARS
             string name = roomSpace.Name;
@@ -367,53 +256,6 @@ namespace STFExporter
 
             return bsa[0].Count;
 
-        }
-
-        private double CalcPointsFC(Space roomSpace, List<FamilyInstance> lightfixtures, XYZ point)
-        {
-            XYZ pointToCalc = new XYZ(point.X, point.Y, 2.5);            
-            double roomArea = roomSpace.Area;
-            double roomPerim = roomSpace.Perimeter;
-            double valueatPoint = 0;
-            string valuestring = "";
-            foreach (FamilyInstance fi in lightfixtures)
-            {
-                ElementId eid = fi.GetTypeId();
-                Element e = _doc.GetElement(eid);
-                PhotometricWebLightDistribution wl = new PhotometricWebLightDistribution(e.get_Parameter(BuiltInParameter.FBX_LIGHT_PHOTOMETRIC_FILE).AsString(), -90.0);
-                double candelaPower = e.get_Parameter(BuiltInParameter.FBX_LIGHT_LIMUNOUS_INTENSITY).AsDouble();
-                double lumens = e.get_Parameter(BuiltInParameter.FBX_LIGHT_LIMUNOUS_FLUX).AsDouble();
-                double efficacy = e.get_Parameter(BuiltInParameter.FBX_LIGHT_EFFICACY).AsDouble();
-                double llf = e.get_Parameter(BuiltInParameter.FBX_LIGHT_TOTAL_LIGHT_LOSS).AsDouble();
-                double cu = fi.get_Parameter(BuiltInParameter.RBS_ROOM_COEFFICIENT_UTILIZATION).AsDouble();
-                double workPlane = roomSpace.LightingCalculationWorkplane;
-                double lightElev = fi.get_Parameter(BuiltInParameter.INSTANCE_ELEVATION_PARAM).AsDouble();
-
-
-                //Calc distance to point
-                LocationPoint lightLocPt = fi.Location as LocationPoint;
-                XYZ lightLoc = lightLocPt.Point;                
-                double distToPoint = lightLoc.DistanceTo(pointToCalc);
-                double angle = lightLoc.AngleTo(pointToCalc);
-                double cosangle = Math.Cos(angle);
-
-                // Calculation formula = 
-                // Lumens = lamp lumens defined in type parameters
-                // angle = angle to point (already expressed in cos needed) no need to adjust further I have found out
-                // distToPoint = trig distance calced from light source to point
-                // must square ^2 the result because resultant is expressed in lm/ft^2 so need to square in order to achieve
-                //  true result of footcandles.
-                double res = Math.Pow((lumens * angle) / Math.Pow(distToPoint, 2), 2);
-
-                valueatPoint += res;
-                valuestring += "\nLightLoc: " + lightLoc.ToString() + "\nDistToPt: " + distToPoint.ToString()
-                    + "\nAngle: " + angle.ToString()
-                    + "\nCosAngle: " + cosangle.ToString()
-                    + "\nRes: " + res.ToString();
-            }
-
-            //TaskDialog.Show("result", "Result = " + valuestring);
-            return valueatPoint;
         }
     }
 }
