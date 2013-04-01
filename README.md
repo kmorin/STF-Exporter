@@ -8,4 +8,9 @@ STF Exporter plugin for Revit to DIALux
 	2. Copy both .dll and .addin file to your Revit Add-Ins folder (C:\Users\USERNAME\AppData\Roaming\Autodesk\Revit\Addins\VERSION)
 	3. Start Revit instance, command located in Add-Ins Tab, External Tools
 
-#### Known Issues:  
+Example video of workflow: http://www.youtube.com/watch?v=XWg7VH4ChZM
+
+#### Known Issues:
+
+- Have to re-map light fixture types in DIALux after first import, but Locations and elevations are correct (this is DIALux problem, not Revit)
+- If using Imperial measurements: Measurements/distances will be off slightly. (This is due to DIALux conversions of units from meters to Feet/Inches. Even when getting exact from Revit out to STF, DIALux still converts back to feet/inches not exact)
