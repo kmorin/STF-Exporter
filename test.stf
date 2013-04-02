@@ -1,0 +1,127 @@
+[VERSION]
+STFF=1.0.5
+Progname=Revit
+Progvers=2013
+[Project]
+Name=Project Name
+Date=2013-3-29
+NrRooms=2
+Room1=ROOM.R1
+Room2=ROOM.R2
+[ROOM.R1]
+Name=Space 1
+Height=8
+WorkingPlane=2.5
+NrPoints=4
+Point1=-8.27618095201038 4.35508636131515
+Point2=-20.6251392853437 4.35508636131515
+Point3=-20.6251392853437 -9.24908030535152
+Point4=-8.27618095201038 -9.24908030535152
+R_Ceiling=0.8
+NrLums=2
+NrStruct=0
+NrFurns=0
+[ROOM.R2]
+Name=Space 2
+Height=9
+WorkingPlane=2.5
+NrPoints=4
+Point1=-45.4599711633111 62.5850267390664
+Point2=-45.4599711633112 20.9183600723998
+Point3=3.20669550335549 20.9183600723998
+Point4=3.20669550335549 62.5850267390664
+R_Ceiling=0.75
+NrLums=1
+NrStruct=0
+NrFurns=0
+[1x4 - 120]
+Manufacturer=
+Name=
+OrderNr=
+Box=1 0 0
+Shape=0
+Load=Autodesk.Revit.DB.Parameter
+Flux=Autodesk.Revit.DB.Parameter
+NrLamps=1
+MountingType=1
+[1x4 - 277]
+Manufacturer=
+Name=
+OrderNr=
+Box=1 0 0
+Shape=0
+Load=Autodesk.Revit.DB.Parameter
+Flux=Autodesk.Revit.DB.Parameter
+NrLamps=1
+MountingType=1
+[20x4 - 120]
+Manufacturer=
+Name=
+OrderNr=
+Box=1 0 0
+Shape=0
+Load=Autodesk.Revit.DB.Parameter
+Flux=Autodesk.Revit.DB.Parameter
+NrLamps=1
+MountingType=1
+[20x4 - 277]
+Manufacturer=
+Name=
+OrderNr=
+Box=1 0 0
+Shape=0
+Load=Autodesk.Revit.DB.Parameter
+Flux=Autodesk.Revit.DB.Parameter
+NrLamps=1
+MountingType=1
+[2x2 - 120]
+Manufacturer=
+Name=
+OrderNr=
+Box=1 0 0
+Shape=0
+Load=Autodesk.Revit.DB.Parameter
+Flux=Autodesk.Revit.DB.Parameter
+NrLamps=1
+MountingType=1
+[2x2 - 277]
+Manufacturer=
+Name=
+OrderNr=
+Box=1 0 0
+Shape=0
+Load=Autodesk.Revit.DB.Parameter
+Flux=Autodesk.Revit.DB.Parameter
+NrLamps=1
+MountingType=1
+[2x4 - 120]
+Manufacturer=
+Name=
+OrderNr=
+Box=1 0 0
+Shape=0
+Load=Autodesk.Revit.DB.Parameter
+Flux=Autodesk.Revit.DB.Parameter
+NrLamps=1
+MountingType=1
+[2x4 - 277]
+Manufacturer=
+Name=
+OrderNr=
+Box=1 0 0
+Shape=0
+Load=Autodesk.Revit.DB.Parameter
+Flux=Autodesk.Revit.DB.Parameter
+NrLamps=1
+MountingType=1
+[2x4 - 278]
+Manufacturer=
+Name=
+OrderNr=
+Box=1 0 0
+Shape=0
+Load=Autodesk.Revit.DB.Parameter
+Flux=Autodesk.Revit.DB.Parameter
+NrLamps=1
+MountingType=1
+

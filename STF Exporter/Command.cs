@@ -54,9 +54,12 @@ namespace STFExporter
                 DisplayUnitType meters = DisplayUnitType.DUT_METERS;
                 formatOptions.Units = meters;
                 formatOptions.Rounding = 0.0000000001;
-                
-                FilteredElementCollector fec = new FilteredElementCollector(doc)
-                .OfCategory(BuiltInCategory.OST_MEPSpaces);
+
+                ElementLevelFilter filter = new ElementLevelFilter(doc.ActiveView.GenLevel.Id);
+
+                FilteredElementCollector fec = new FilteredElementCollector(doc, doc.ActiveView.Id)
+                .OfCategory(BuiltInCategory.OST_MEPSpaces)
+                .WherePasses(filter);
 
                 int numOfRooms = fec.Count();
                 writer += "[VERSION]\n"
@@ -76,12 +79,12 @@ namespace STFExporter
 
                 int increment = 1;
 
-                //Space writer
+                //Space writer                
                 foreach (Space s in fec)
-                {                    
-                    writer += "[ROOM.R"+increment.ToString()+"]\n";
+                {
+                    writer += "[ROOM.R" + increment.ToString() + "]\n";
                     SpaceInfoWriter(s.Id);
-                    increment++;
+                    increment++;                
                 }
 
                 //Writout Luminaires to bottom
@@ -122,20 +125,28 @@ namespace STFExporter
 
             foreach (FamilySymbol fs in fecFixtures)
             {
-                string load = fs.get_Parameter(BuiltInParameter.RBS_ELEC_APPARENT_LOAD).AsValueString();
-                string flux = fs.get_Parameter(BuiltInParameter.FBX_LIGHT_LIMUNOUS_FLUX).AsValueString();
+                string load = "";
+                string flux = "";
+                ParameterSet pset = fs.Parameters;
 
-                writer += "[" + fs.Name + "]\n";
-                writer += "Manufacturer=" + "\n"
-                 + "Name=" + "\n"
-                 + "OrderNr=" + "\n"
-                 + "Box=1 1 0" + "\n" //need to fix per bounding box size (i guess);
-                 + "Shape=0" + "\n"
-                 + "Load=" + load.Remove(load.Length - 3) + "\n"
-                 + "Flux=" + flux.Remove(flux.Length - 3) + "\n"
-                 + "NrLamps=" + getNumLamps(fs) + "\n"
-                 + "MountingType=1\n";
+                Parameter pload = fs.get_Parameter(BuiltInParameter.RBS_ELEC_APPARENT_LOAD);
+                Parameter pflux = fs.get_Parameter(BuiltInParameter.FBX_LIGHT_LIMUNOUS_FLUX);
+                if (pflux != null)
+                {
+                    load = pload.AsValueString();
+                    flux = pflux.AsValueString();
 
+                    writer += "[" + fs.Name.Replace(" ","") + "]\n";
+                    writer += "Manufacturer=" + "\n"
+                        + "Name=" + "\n"
+                        + "OrderNr=" + "\n"
+                        + "Box=1 1 0" + "\n" //need to fix per bounding box size (i guess);
+                        + "Shape=0" + "\n"
+                        + "Load=" + load.Remove(load.Length - 3) + "\n"
+                        + "Flux=" + flux.Remove(flux.Length - 3) + "\n"
+                        + "NrLamps=" + getNumLamps(fs) + "\n"
+                        + "MountingType=1\n";
+                }
             }
             
 
@@ -164,6 +175,7 @@ namespace STFExporter
             
             //Get info from Space
             Space roomSpace = _doc.GetElement(spaceID) as Space;
+            //Space roomSpace = _doc.get_Element(spaceID) as Space;
 
             //VARS
             string name = roomSpace.Name;
@@ -195,7 +207,12 @@ namespace STFExporter
             
             //Write out ceiling reflectance
             writer += "R_Ceiling=" + cReflect.ToString() + "\n";
-            
+
+            IList<ElementId> elemIds = roomSpace.GetMonitoredLocalElementIds();
+            foreach (ElementId e in elemIds)
+            {
+                TaskDialog.Show("s", _doc.GetElement(e).Name);
+            }
 
             //Get fixtures within space
             FilteredElementCollector fec = new FilteredElementCollector(_doc)
@@ -208,6 +225,7 @@ namespace STFExporter
                 if (fi.Space.Id == spaceID)
                 {
                     FamilySymbol fs = _doc.GetElement(fi.GetTypeId()) as FamilySymbol;
+                    //FamilySymbol fs = _doc.get_Element(fi.GetTypeId()) as FamilySymbol;
 
                     int lumNum = count + 1;
                     string lumName = "Lum" + lumNum.ToString();
@@ -218,20 +236,17 @@ namespace STFExporter
                     double Z = fixtureloc.Z * meterMultiplier;
 
                     double rotation = locpt.Rotation;
-                    writer += lumName + "=" + fs.Name +"\n";
+                    writer += lumName + "=" + fs.Name.Replace(" ","") + "\n";
                     writer += lumName + ".Pos=" + X.ToString() + " " + Y.ToString() + " " + Z.ToString() + "\n";
                     writer += lumName + ".Rot=0 0 0" + "\n"; //need to figure out this rotation; Update: cannot determine. Almost impossible for Dialux
 
                     count++;
-                }                                
+                }
             }
 
             //Writeout Lums part
             writer += "NrLums=" + count.ToString() + "\n"
                 + "NrStruct=0\n" + "NrFurns=0\n";
-            
-
-
         }
 
         private List<string> getVertexPoints(Space roomSpace)
@@ -239,13 +254,20 @@ namespace STFExporter
             List<string> verticies = new List<string>();
             SpatialElementBoundaryOptions opts = new SpatialElementBoundaryOptions();
             IList<IList<Autodesk.Revit.DB.BoundarySegment>> bsa = roomSpace.GetBoundarySegments(opts);
-            foreach (Autodesk.Revit.DB.BoundarySegment bs in bsa[0])
+            if (bsa.Count > 0)
             {
-                var X = bs.Curve.get_EndPoint(0).X * meterMultiplier;
-                var Y = bs.Curve.get_EndPoint(0).Y * meterMultiplier;
-                verticies.Add(X.ToString() + " " + Y.ToString());
-            }
+                foreach (Autodesk.Revit.DB.BoundarySegment bs in bsa[0])
+                {
+                    var X = bs.Curve.get_EndPoint(0).X * meterMultiplier;
+                    var Y = bs.Curve.get_EndPoint(0).Y * meterMultiplier;
+                    verticies.Add(X.ToString() + " " + Y.ToString());
+                }
 
+            }
+            else
+            {
+                verticies.Add("0 0");
+            }
             return verticies;
         }
 
