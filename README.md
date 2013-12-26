@@ -14,3 +14,9 @@ Example video of workflow: http://www.youtube.com/watch?v=XWg7VH4ChZM
 
 - Have to re-map light fixture types in DIALux after first import, but Locations and elevations are correct (this is DIALux problem, not Revit)
 - If using Imperial measurements: Measurements/distances will be off slightly. (This is due to DIALux conversions of units from meters to Feet/Inches. Even when getting exact from Revit out to STF, DIALux still converts back to feet/inches not exact)
+
+<hr>
+
+#### License
+
+STF Exporter is released under the [MIT License](http://opensource.org/licenses/MIT)
