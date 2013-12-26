@@ -67,17 +67,20 @@ namespace STFExporter
             _doc = doc;
 
             //Set project units to Meters then back after
-            ProjectUnit pUnit = doc.ProjectUnit;
-            FormatOptions formatOptions = pUnit.get_FormatOptions(UnitType.UT_Length);
 
-            DisplayUnitType curUnitType = formatOptions.Units;
+            Units pUnit = doc.GetUnits();
+            FormatOptions formatOptions = pUnit.GetFormatOptions(UnitType.UT_Length);
+
+            DisplayUnitType curUnitType = pUnit.GetDisplayUnitType();
 
             using (Transaction tx = new Transaction(doc))
             {
                 tx.Start("STF EXPORT");
                 DisplayUnitType meters = DisplayUnitType.DUT_METERS;
-                formatOptions.Units = meters;
-                formatOptions.Rounding = 0.0000000001;
+                formatOptions.DisplayUnits = meters;                
+                //formatOptions.Units = meters;
+                //formatOptions.Rounding = 0.0000000001;
+                formatOptions.Accuracy = 0.0000000001;
 
                 ElementLevelFilter filter = new ElementLevelFilter(doc.ActiveView.GenLevel.Id);
 
@@ -115,7 +118,7 @@ namespace STFExporter
                 writeLumenairs();
 
                 //reset back to original
-                formatOptions.Units = curUnitType;
+                formatOptions.DisplayUnits = curUnitType;
 
                 tx.Commit();
 
