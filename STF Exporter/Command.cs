@@ -107,40 +107,48 @@ namespace STFExporter
                 int increment = 1;
 
                 //Space writer                
-                foreach (Space s in fec)
+                try
                 {
-                    writer += "[ROOM.R" + increment.ToString() + "]\n";
-                    SpaceInfoWriter(s.Id);
-                    increment++;                
-                }
-
-                //Writout Luminaires to bottom
-                writeLumenairs();
-
-                //reset back to original
-                formatOptions.DisplayUnits = curUnitType;
-
-                tx.Commit();
-
-                SaveFileDialog dialog = new SaveFileDialog
-                {
-                    Filter = "STF File | *.stf",
-                    FilterIndex = 2,
-                    RestoreDirectory = true
-                };
-
-                if (dialog.ShowDialog() == DialogResult.OK)
-                {
-                    StreamWriter sw = new StreamWriter(dialog.FileName);
-                    string[] ar = writer.Split('\n');
-                    for (int i = 0; i < ar.Length; i++)
+                    foreach (Space s in fec)
                     {
-                        sw.WriteLine(ar[i]);
+                        writer += "[ROOM.R" + increment.ToString() + "]\n";
+                        SpaceInfoWriter(s.Id);
+                        increment++;
                     }
-                    sw.Close();
-                }
 
-                return Result.Succeeded;
+
+                    //Writout Luminaires to bottom
+                    writeLumenairs();
+
+                    //reset back to original
+                    formatOptions.DisplayUnits = curUnitType;
+
+                    tx.Commit();
+
+                    SaveFileDialog dialog = new SaveFileDialog
+                    {
+                        Filter = "STF File | *.stf",
+                        FilterIndex = 2,
+                        RestoreDirectory = true
+                    };
+
+                    if (dialog.ShowDialog() == DialogResult.OK)
+                    {
+                        StreamWriter sw = new StreamWriter(dialog.FileName);
+                        string[] ar = writer.Split('\n');
+                        for (int i = 0; i < ar.Length; i++)
+                        {
+                            sw.WriteLine(ar[i]);
+                        }
+                        sw.Close();
+                    }
+
+                    return Result.Succeeded;
+                }
+                catch (IndexOutOfRangeException)
+                {
+                    return Result.Failed;
+                }
             }
         }
 
@@ -198,82 +206,92 @@ namespace STFExporter
 
         private void SpaceInfoWriter(ElementId spaceID)
         {
-            const double MAX_ROUNDING_PRECISION = 0.000000000001;
-            
-            //Get info from Space
-            Space roomSpace = _doc.GetElement(spaceID) as Space;
-            //Space roomSpace = _doc.get_Element(spaceID) as Space;
-
-            //VARS
-            string name = roomSpace.Name;
-            double height = roomSpace.UnboundedHeight * meterMultiplier;
-            double workPlane = roomSpace.LightingCalculationWorkplane * meterMultiplier;
-            
-            //Get room vertices
-            List<String> verticies = new List<string>();
-            verticies = getVertexPoints(roomSpace);
-
-            int numPoints = getVertexPointNums(roomSpace);
-
-            //Writeout Top part of room entry
-            writer += "Name=" + name + "\n"
-                + "Height=" + height.ToString() + "\n"
-                + "WorkingPlane=" + workPlane.ToString() + "\n"
-                + "NrPoints=" + numPoints.ToString() + "\n";
-
-            //Write vertices for each point in vertex numbers
-            for (int i = 0; i < numPoints; i++)
+            try
             {
-                int i2 = i + 1;
-                writer += "Point" + i2 + "=" + verticies.ElementAt(i) + "\n";
-            }
+                const double MAX_ROUNDING_PRECISION = 0.000000000001;
 
-            double cReflect = roomSpace.CeilingReflectance;
-            double fReflect = roomSpace.FloorReflectance;
-            double wReflect = roomSpace.WallReflectance;
-            
-            //Write out ceiling reflectance
-            writer += "R_Ceiling=" + cReflect.ToString() + "\n";
+                //Get info from Space
+                Space roomSpace = _doc.GetElement(spaceID) as Space;
+                //Space roomSpace = _doc.get_Element(spaceID) as Space;
 
-            IList<ElementId> elemIds = roomSpace.GetMonitoredLocalElementIds();
-            foreach (ElementId e in elemIds)
-            {
-                TaskDialog.Show("s", _doc.GetElement(e).Name);
-            }
+                //VARS
+                string name = roomSpace.Name;
+                double height = roomSpace.UnboundedHeight * meterMultiplier;
+                double workPlane = roomSpace.LightingCalculationWorkplane * meterMultiplier;
 
-            //Get fixtures within space
-            FilteredElementCollector fec = new FilteredElementCollector(_doc)
-            .OfCategory(BuiltInCategory.OST_LightingFixtures)
-            .OfClass(typeof(FamilyInstance));
+                //Get room vertices
+                List<String> verticies = new List<string>();
+                verticies = getVertexPoints(roomSpace);
 
-            int count = 0;
-            foreach (FamilyInstance fi in fec)
-            {
-                if (fi.Space.Id == spaceID)
+                int numPoints = getVertexPointNums(roomSpace);
+
+                //Writeout Top part of room entry
+                writer += "Name=" + name + "\n"
+                    + "Height=" + height.ToString() + "\n"
+                    + "WorkingPlane=" + workPlane.ToString() + "\n"
+                    + "NrPoints=" + numPoints.ToString() + "\n";
+
+                //Write vertices for each point in vertex numbers
+                for (int i = 0; i < numPoints; i++)
                 {
-                    FamilySymbol fs = _doc.GetElement(fi.GetTypeId()) as FamilySymbol;
-                    //FamilySymbol fs = _doc.get_Element(fi.GetTypeId()) as FamilySymbol;
-
-                    int lumNum = count + 1;
-                    string lumName = "Lum" + lumNum.ToString();
-                    LocationPoint locpt = fi.Location as LocationPoint;
-                    XYZ fixtureloc = locpt.Point;
-                    double X = fixtureloc.X * meterMultiplier;
-                    double Y = fixtureloc.Y * meterMultiplier;
-                    double Z = fixtureloc.Z * meterMultiplier;
-
-                    double rotation = locpt.Rotation;
-                    writer += lumName + "=" + fs.Name.Replace(" ","") + "\n";
-                    writer += lumName + ".Pos=" + X.ToString() + " " + Y.ToString() + " " + Z.ToString() + "\n";
-                    writer += lumName + ".Rot=0 0 0" + "\n"; //need to figure out this rotation; Update: cannot determine. Almost impossible for Dialux
-
-                    count++;
+                    int i2 = i + 1;
+                    writer += "Point" + i2 + "=" + verticies.ElementAt(i) + "\n";
                 }
-            }
 
-            //Writeout Lums part
-            writer += "NrLums=" + count.ToString() + "\n"
-                + "NrStruct=0\n" + "NrFurns=0\n";
+                double cReflect = roomSpace.CeilingReflectance;
+                double fReflect = roomSpace.FloorReflectance;
+                double wReflect = roomSpace.WallReflectance;
+
+                //Write out ceiling reflectance
+                writer += "R_Ceiling=" + cReflect.ToString() + "\n";
+
+                IList<ElementId> elemIds = roomSpace.GetMonitoredLocalElementIds();
+                foreach (ElementId e in elemIds)
+                {
+                    TaskDialog.Show("s", _doc.GetElement(e).Name);
+                }
+
+                //Get fixtures within space
+                FilteredElementCollector fec = new FilteredElementCollector(_doc)
+                .OfCategory(BuiltInCategory.OST_LightingFixtures)
+                .OfClass(typeof(FamilyInstance));
+
+                int count = 0;
+                foreach (FamilyInstance fi in fec)
+                {
+                    if (fi.Space != null)
+                    {
+                        if (fi.Space.Id == spaceID)
+                        {
+                            FamilySymbol fs = _doc.GetElement(fi.GetTypeId()) as FamilySymbol;
+                            //FamilySymbol fs = _doc.get_Element(fi.GetTypeId()) as FamilySymbol;
+
+                            int lumNum = count + 1;
+                            string lumName = "Lum" + lumNum.ToString();
+                            LocationPoint locpt = fi.Location as LocationPoint;
+                            XYZ fixtureloc = locpt.Point;
+                            double X = fixtureloc.X * meterMultiplier;
+                            double Y = fixtureloc.Y * meterMultiplier;
+                            double Z = fixtureloc.Z * meterMultiplier;
+
+                            double rotation = locpt.Rotation;
+                            writer += lumName + "=" + fs.Name.Replace(" ", "") + "\n";
+                            writer += lumName + ".Pos=" + X.ToString() + " " + Y.ToString() + " " + Z.ToString() + "\n";
+                            writer += lumName + ".Rot=0 0 0" + "\n"; //need to figure out this rotation; Update: cannot determine. Almost impossible for Dialux
+
+                            count++;
+                        }
+                    }
+                }
+
+                //Writeout Lums part
+                writer += "NrLums=" + count.ToString() + "\n"
+                    + "NrStruct=0\n" + "NrFurns=0\n";
+            }
+            catch (IndexOutOfRangeException)
+            {
+                throw new IndexOutOfRangeException();
+            }
         }
 
         private List<string> getVertexPoints(Space roomSpace)
@@ -301,9 +319,17 @@ namespace STFExporter
         private int getVertexPointNums(Space roomSpace)
         {
             SpatialElementBoundaryOptions opts = new SpatialElementBoundaryOptions();
-            IList<IList<Autodesk.Revit.DB.BoundarySegment>> bsa = roomSpace.GetBoundarySegments(opts);
+            try
+            {
+                IList<IList<Autodesk.Revit.DB.BoundarySegment>> bsa = roomSpace.GetBoundarySegments(opts);
 
-            return bsa[0].Count;
+                return bsa[0].Count;
+            }
+            catch (Exception)
+            {
+                TaskDialog.Show("OOPS!", "Seems you have a Space in your view that is not in a properly enclosed region. \n\nPlease remove these Spaces or re-establish them inside of boundary walls and run the Exporter again.");
+                throw new IndexOutOfRangeException();                
+            }
 
         }
     }
