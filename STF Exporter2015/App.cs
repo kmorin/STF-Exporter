@@ -14,7 +14,7 @@ namespace STFExporter
     class App : IExternalApplication
     {
         static string dir = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
-        static string assyPath = Path.Combine(dir, "STFExporter.dll");
+        static string assyPath = Path.Combine(dir, "STFExporter2015.dll");
         static string _imgFolder = Path.Combine(dir, "Images");
         
         public Result OnStartup(UIControlledApplication a)

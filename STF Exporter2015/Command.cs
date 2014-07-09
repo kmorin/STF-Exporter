@@ -279,8 +279,11 @@ namespace STFExporter
             {
                 foreach (Autodesk.Revit.DB.BoundarySegment bs in bsa[0])
                 {
-                    var X = bs.Curve.get_EndPoint(0).X * meterMultiplier;
-                    var Y = bs.Curve.get_EndPoint(0).Y * meterMultiplier;
+                    //For 2014 //var X = bs.Curve.get_EndPoint(0).X * meterMultiplier;
+                               //var Y = bs.Curve.get_EndPoint(0).Y * meterMultiplier;
+                    var X = bs.Curve.GetEndPoint(0).X * meterMultiplier;
+                    var Y = bs.Curve.GetEndPoint(0).Y * meterMultiplier;
+                    
                     verticies.Add(X.ToString() + " " + Y.ToString());
                 }
 
