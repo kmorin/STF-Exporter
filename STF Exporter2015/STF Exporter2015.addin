@@ -1,0 +1,11 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<RevitAddIns>
+  <AddIn Type="Application">
+    <Name>Application STF Exporter</Name>
+    <Assembly>.\STFExporter.bundle\Contents\STFExporter2015.dll</Assembly>
+    <FullClassName>STFExporter.App</FullClassName>
+    <ClientId>EB9478F4-469C-4069-A74F-62DFB0FBC83A</ClientId>
+    <VendorId>KTM</VendorId>
+    <VendorDescription>Kyle T. Morin</VendorDescription>
+  </AddIn>
+</RevitAddIns>
