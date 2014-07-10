@@ -10,7 +10,6 @@ using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Analysis;
 using Autodesk.Revit.UI;
 using Autodesk.Revit.UI.Selection;
-using Autodesk.Revit.DB.Analysis;
 using Autodesk.Revit.DB.Mechanical;
 using Autodesk.Revit.DB.Electrical;
 using Autodesk.Revit.DB.Lighting;
@@ -29,6 +28,7 @@ namespace STFExporter
         public double meterMultiplier = 0.3048;
         public List<ElementId> distinctLuminaires = new List<ElementId>();
         public string stfVersionNum = "1.0.5";
+        public bool intlVersion;
 
         public Result Execute(
           ExternalCommandData commandData,
@@ -47,7 +47,8 @@ namespace STFExporter
             Units pUnit = doc.GetUnits();
             FormatOptions formatOptions = pUnit.GetFormatOptions(UnitType.UT_Length);
 
-            DisplayUnitType curUnitType = pUnit.GetDisplayUnitType();
+            //DisplayUnitType curUnitType = pUnit.GetDisplayUnitType();
+            DisplayUnitType curUnitType = formatOptions.DisplayUnits;
 
             using (Transaction tx = new Transaction(doc))
             {
@@ -57,7 +58,12 @@ namespace STFExporter
                 //formatOptions.Units = meters;
                 //formatOptions.Rounding = 0.0000000001;
                 formatOptions.Accuracy = 0.0000000001;
-
+                //Fix decimal symbol for int'l versions (set back again after finish)
+                if (pUnit.DecimalSymbol == DecimalSymbol.Comma)
+                {
+                    intlVersion = true;
+                    pUnit.DecimalSymbol = DecimalSymbol.Dot;
+                }
                 ElementLevelFilter filter = new ElementLevelFilter(doc.ActiveView.GenLevel.Id);
 
                 FilteredElementCollector fec = new FilteredElementCollector(doc, doc.ActiveView.Id)
@@ -98,11 +104,15 @@ namespace STFExporter
 
                     //reset back to original
                     formatOptions.DisplayUnits = curUnitType;
+                    if (intlVersion)
+                        pUnit.DecimalSymbol = DecimalSymbol.Comma;
+
 
                     tx.Commit();
 
                     SaveFileDialog dialog = new SaveFileDialog
                     {
+                        FileName = doc.ProjectInformation.Name,
                         Filter = "STF File | *.stf",
                         FilterIndex = 2,
                         RestoreDirectory = true
@@ -167,9 +177,10 @@ namespace STFExporter
         private string getNumLamps(FamilySymbol fs)
         {
             string results;
-            if (fs.get_Parameter("Number of Lamps") != null)
+
+            if (fs.LookupParameter("Number of Lamps") != null)
             {
-                results = fs.get_Parameter("Number of Lamps").ToString();
+                results = fs.LookupParameter("Number of Lamps").ToString();
                 return results;
             }
             else
