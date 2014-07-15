@@ -62,6 +62,9 @@ namespace STFExporter
                 if (pUnit.DecimalSymbol == DecimalSymbol.Comma)
                 {
                     intlVersion = true;
+                    //TESTING
+                    //TaskDialog.Show("INTL", "You have an internationalized version of Revit!");
+                    formatOptions.UseDigitGrouping = false;
                     pUnit.DecimalSymbol = DecimalSymbol.Dot;
                 }
                 ElementLevelFilter filter = new ElementLevelFilter(doc.ActiveView.GenLevel.Id);
