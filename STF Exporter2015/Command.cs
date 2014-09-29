@@ -42,7 +42,8 @@ namespace STFExporter
             _app = app;
             _doc = doc;
 
-            //Set project units to Meters then back after
+            // Set project units to Meters then back after
+            // This is how DIALux reads the data from the STF File.
 
             Units pUnit = doc.GetUnits();
             FormatOptions formatOptions = pUnit.GetFormatOptions(UnitType.UT_Length);
@@ -55,10 +56,12 @@ namespace STFExporter
                 tx.Start("STF EXPORT");
                 DisplayUnitType meters = DisplayUnitType.DUT_METERS;
                 formatOptions.DisplayUnits = meters;
+                // Comment out, different in 2014
                 //formatOptions.Units = meters;
-                //formatOptions.Rounding = 0.0000000001;
+                //formatOptions.Rounding = 0.0000000001;]
+
                 formatOptions.Accuracy = 0.0000000001;
-                //Fix decimal symbol for int'l versions (set back again after finish)
+                // Fix decimal symbol for int'l versions (set back again after finish)
                 if (pUnit.DecimalSymbol == DecimalSymbol.Comma)
                 {
                     intlVersion = true;
@@ -67,6 +70,8 @@ namespace STFExporter
                     formatOptions.UseDigitGrouping = false;
                     pUnit.DecimalSymbol = DecimalSymbol.Dot;
                 }
+
+                // Filter for only active view.
                 ElementLevelFilter filter = new ElementLevelFilter(doc.ActiveView.GenLevel.Id);
 
                 FilteredElementCollector fec = new FilteredElementCollector(doc, doc.ActiveView.Id)
@@ -86,26 +91,28 @@ namespace STFExporter
 
                 for (int i = 1; i < numOfRooms + 1; i++)
                 {
-                    writer += "Room" + i.ToString() + "=ROOM.R" + i.ToString() + "\n";
+                    string _dialuxRoomName = "Room" + i.ToString() + "=ROOM.R" + i.ToString();
+                    writer += _dialuxRoomName + "\n";
                 }
 
                 int increment = 1;
 
-                //Space writer                
+                // Space writer                
                 try
                 {
                     foreach (Space s in fec)
                     {
-                        writer += "[ROOM.R" + increment.ToString() + "]\n";
-                        SpaceInfoWriter(s.Id);
+                        string roomRNum = "ROOM.R" + increment.ToString();
+                        writer += "[" + roomRNum + "]\n";
+                        SpaceInfoWriter(s.Id, roomRNum);
                         increment++;
                     }
 
 
-                    //Writout Luminaires to bottom
+                    // Write out Luminaires to bottom
                     writeLumenairs();
 
-                    //reset back to original
+                    // Reset back to original units
                     formatOptions.DisplayUnits = curUnitType;
                     if (intlVersion)
                         pUnit.DecimalSymbol = DecimalSymbol.Comma;
@@ -140,7 +147,7 @@ namespace STFExporter
                 }
             }
         }
-
+        #region Private Methods
         private void writeLumenairs()
         {
             FilteredElementCollector fecFixtures = new FilteredElementCollector(_doc)
@@ -188,40 +195,41 @@ namespace STFExporter
             }
             else
             {
-                //Parse from IES file
+                // TODO:
+                // Parse from IES file
                 var file = fs.get_Parameter(BuiltInParameter.FBX_LIGHT_PHOTOMETRIC_FILE);
                 return "1"; //for now
             }
         }
 
-        private void SpaceInfoWriter(ElementId spaceID)
+        private void SpaceInfoWriter(ElementId spaceID, string RoomRNum)
         {
             try
             {
                 const double MAX_ROUNDING_PRECISION = 0.000000000001;
 
-                //Get info from Space
+                // Get info from Space
                 Space roomSpace = _doc.GetElement(spaceID) as Space;
                 //Space roomSpace = _doc.get_Element(spaceID) as Space;
 
-                //VARS
+                // VARS
                 string name = roomSpace.Name;
                 double height = roomSpace.UnboundedHeight * meterMultiplier;
                 double workPlane = roomSpace.LightingCalculationWorkplane * meterMultiplier;
 
-                //Get room vertices
+                // Get room vertices
                 List<String> verticies = new List<string>();
                 verticies = getVertexPoints(roomSpace);
 
                 int numPoints = getVertexPointNums(roomSpace);
 
-                //Writeout Top part of room entry
+                // Write out Top part of room entry
                 writer += "Name=" + name + "\n"
                     + "Height=" + height.ToString() + "\n"
                     + "WorkingPlane=" + workPlane.ToString() + "\n"
                     + "NrPoints=" + numPoints.ToString() + "\n";
 
-                //Write vertices for each point in vertex numbers
+                // Write vertices for each point in vertex numbers
                 for (int i = 0; i < numPoints; i++)
                 {
                     int i2 = i + 1;
@@ -232,7 +240,7 @@ namespace STFExporter
                 double fReflect = roomSpace.FloorReflectance;
                 double wReflect = roomSpace.WallReflectance;
 
-                //Write out ceiling reflectance
+                // Write out ceiling reflectance
                 writer += "R_Ceiling=" + cReflect.ToString() + "\n";
 
                 IList<ElementId> elemIds = roomSpace.GetMonitoredLocalElementIds();
@@ -241,7 +249,7 @@ namespace STFExporter
                     TaskDialog.Show("s", _doc.GetElement(e).Name);
                 }
 
-                //Get fixtures within space
+                // Get fixtures within space
                 FilteredElementCollector fec = new FilteredElementCollector(_doc)
                 .OfCategory(BuiltInCategory.OST_LightingFixtures)
                 .OfClass(typeof(FamilyInstance));
@@ -274,14 +282,80 @@ namespace STFExporter
                     }
                 }
 
-                //Writeout Lums part
-                writer += "NrLums=" + count.ToString() + "\n"
-                    + "NrStruct=0\n" + "NrFurns=0\n";
+                // Write out Lums part
+                writer += "NrLums=" + count.ToString() + "\n";
+                // Write out Struct part
+                writer += "NrStruct=0\n";
+                // Write out Furn part
+                writer += "NrFurns=" + getFurns(spaceID, RoomRNum);
+
             }
             catch (IndexOutOfRangeException)
             {
                 throw new IndexOutOfRangeException();
             }
+        }
+
+        private string getFurns(ElementId spaceID, string RoomRNum)
+        {
+            string furnsOutput = String.Empty;
+            // Go through the room and write out the windows/doors
+            Space _space = _doc.GetElement(spaceID) as Space;
+
+            // DOORS //
+            // Get all doors that have space where id equals current space.
+            FilteredElementCollector fec = new FilteredElementCollector(_doc)
+            .OfCategory(BuiltInCategory.OST_Doors);
+
+            List<Element> doorsList = new List<Element>();
+
+            foreach (Element e in fec)
+            {
+                FamilyInstance fi = e as FamilyInstance;
+                if (fi != null && fi.Space.Id == spaceID)
+                    doorsList.Add(fi);
+            }
+
+            //Add Number of Furns to string
+            furnsOutput += doorsList.Count.ToString() + "\n";
+
+            // Loop through new list of Doors
+            int doorNumber = 1;
+            foreach (Element e in doorsList)
+            {
+                FamilyInstance fi = e as FamilyInstance;
+                // Door Width (in meters)
+                string doorWidth = (fi.Symbol.get_Parameter(BuiltInParameter.DOOR_WIDTH).AsDouble() * 0.3048).ToString();
+                // Door height (in meters)
+                string doorHeight = (fi.Symbol.get_Parameter(BuiltInParameter.DOOR_HEIGHT).AsDouble() * 0.3048).ToString();
+                LocationPoint lp = fi.Location as LocationPoint;
+                XYZ p = new XYZ(lp.Point.X * 0.30, lp.Point.Y * 0.30, 0);
+                //XYZ p = new XYZ(lp.Point.X, lp.Point.Y, 0);
+                string lps = p.ToString().Substring(1, p.ToString().Length - 2);
+                //string lps = lp.Point.ToString().Substring(1, lp.Point.ToString().Length - 2);
+
+                string furnNumber = "Furn" + doorNumber.ToString();
+                //Furn1=door
+                //Furn1.Ref=ROOM.R1.F1
+                //Furn1.Rot=90.00 0.00 0.00
+                //Furn1.Pos=1.151 3.67 0
+                //Furn1.Size=1.0 2.0 0.0
+                furnsOutput += furnNumber + "=door\n";
+                furnsOutput += furnNumber + ".Ref=" + RoomRNum + ".F" + doorNumber.ToString() + "\n";
+                // TODO: fix rotation
+                furnsOutput += furnNumber + ".Rot=90.00 0.00 0.00" + "\n"; //rotation???
+                // TODO: fix positioning...
+                furnsOutput += furnNumber + ".Pos=" + lps + "\n";
+                furnsOutput += furnNumber + ".Size=" + doorWidth + " " + doorHeight + " 0.00\n";
+
+                //Inrement furns
+                doorNumber++;
+            }
+
+            // WINDOWS //
+
+
+            return furnsOutput;
         }
 
         private List<string> getVertexPoints(Space roomSpace)
@@ -293,11 +367,12 @@ namespace STFExporter
             {
                 foreach (Autodesk.Revit.DB.BoundarySegment bs in bsa[0])
                 {
-                    //For 2014 //var X = bs.Curve.get_EndPoint(0).X * meterMultiplier;
-                               //var Y = bs.Curve.get_EndPoint(0).Y * meterMultiplier;
+                    // For 2014
+                    //var X = bs.Curve.get_EndPoint(0).X * meterMultiplier;
+                    //var Y = bs.Curve.get_EndPoint(0).Y * meterMultiplier;
                     var X = bs.Curve.GetEndPoint(0).X * meterMultiplier;
                     var Y = bs.Curve.GetEndPoint(0).Y * meterMultiplier;
-                    
+
                     verticies.Add(X.ToString() + " " + Y.ToString());
                 }
 
@@ -325,5 +400,6 @@ namespace STFExporter
             }
 
         }
+        #endregion
     }
 }
