@@ -304,23 +304,37 @@ namespace STFExporter
 
             // DOORS //
             // Get all doors that have space where id equals current space.
-            FilteredElementCollector fec = new FilteredElementCollector(_doc)
-            .OfCategory(BuiltInCategory.OST_Doors);
+            FilteredElementCollector fecDoors = new FilteredElementCollector(_doc)
+            .OfCategory(BuiltInCategory.OST_Doors)
+            .OfClass(typeof(FamilyInstance));
+
+            // WINDOWS //
+            FilteredElementCollector fecWindows = new FilteredElementCollector(_doc)
+            .OfCategory(BuiltInCategory.OST_Windows)
+            .OfClass(typeof(FamilyInstance));
 
             List<Element> doorsList = new List<Element>();
+            List<Element> windowList = new List<Element>();
 
-            foreach (Element e in fec)
+            foreach (Element e in fecDoors)
             {
                 FamilyInstance fi = e as FamilyInstance;
-                if (fi != null && fi.Space.Id == spaceID)
+                if (fi != null && fi.Space != null && fi.Space.Id == spaceID)
                     doorsList.Add(fi);
             }
 
+            foreach (Element e in fecWindows)
+            {
+                FamilyInstance fi = e as FamilyInstance;
+                if (fi != null && fi.Space != null && fi.Space.Id == spaceID)
+                    windowList.Add(fi);
+            }
+
             //Add Number of Furns to string
-            furnsOutput += doorsList.Count.ToString() + "\n";
+            furnsOutput += (doorsList.Count + windowList.Count).ToString() + "\n";
 
             // Loop through new list of Doors
-            int doorNumber = 1;
+            int furnNumber = 1;
             foreach (Element e in doorsList)
             {
                 FamilyInstance fi = e as FamilyInstance;
@@ -334,25 +348,50 @@ namespace STFExporter
                 string lps = p.ToString().Substring(1, p.ToString().Length - 2);
                 //string lps = lp.Point.ToString().Substring(1, lp.Point.ToString().Length - 2);
 
-                string furnNumber = "Furn" + doorNumber.ToString();
+                string sfurnNumber = "Furn" + furnNumber.ToString();
                 //Furn1=door
                 //Furn1.Ref=ROOM.R1.F1
                 //Furn1.Rot=90.00 0.00 0.00
                 //Furn1.Pos=1.151 3.67 0
                 //Furn1.Size=1.0 2.0 0.0
-                furnsOutput += furnNumber + "=door\n";
-                furnsOutput += furnNumber + ".Ref=" + RoomRNum + ".F" + doorNumber.ToString() + "\n";
+                furnsOutput += sfurnNumber + "=door\n";
+                furnsOutput += sfurnNumber + ".Ref=" + RoomRNum + ".F" + furnNumber.ToString() + "\n";
                 // TODO: fix rotation
-                furnsOutput += furnNumber + ".Rot=90.00 0.00 0.00" + "\n"; //rotation???
+                furnsOutput += sfurnNumber + ".Rot=90.00 0.00 0.00" + "\n"; //rotation???
                 // TODO: fix positioning...
-                furnsOutput += furnNumber + ".Pos=" + lps + "\n";
-                furnsOutput += furnNumber + ".Size=" + doorWidth + " " + doorHeight + " 0.00\n";
+                furnsOutput += sfurnNumber + ".Pos=" + lps + "\n";
+                furnsOutput += sfurnNumber + ".Size=" + doorWidth + " " + doorHeight + " 0.00\n";
 
                 //Inrement furns
-                doorNumber++;
+                furnNumber++;
             }
 
             // WINDOWS //
+
+            foreach (Element e in fecWindows)
+            {
+                FamilyInstance fi = e as FamilyInstance;
+                // Window Width
+                string windowWidth = (fi.Symbol.get_Parameter(BuiltInParameter.WINDOW_WIDTH).AsDouble() * 0.3048).ToString();
+                // Window Height
+                string windowHeight = (fi.Symbol.get_Parameter(BuiltInParameter.WINDOW_HEIGHT).AsDouble() * 0.3048).ToString();
+                LocationPoint lp = fi.Location as LocationPoint;
+                XYZ p = new XYZ(lp.Point.X * 0.30, lp.Point.Y * 0.30, 0);
+                string lps = p.ToString().Substring(1, p.ToString().Length - 2);
+
+                string sFurnNumber = "Furn" + furnNumber.ToString();
+                furnsOutput += sFurnNumber + "=win\n";
+                furnsOutput += sFurnNumber + ".Ref=" + RoomRNum + ".F" + furnNumber.ToString() + "\n";
+                // TODO: fix rotation
+                furnsOutput += sFurnNumber + ".Rot=90.00 0.00 0.00" + "\n"; //rotation???
+                // TODO: fix positioning...
+                furnsOutput += sFurnNumber + ".Pos=" + lps + "\n";
+                furnsOutput += sFurnNumber + ".Size=" + windowWidth + " " + windowHeight + " 0.00\n";
+
+                //Inrement furns
+                furnNumber++;
+
+            }
 
 
             return furnsOutput;

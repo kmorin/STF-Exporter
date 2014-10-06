@@ -43,9 +43,6 @@
     <AssemblyName>STFExporter</AssemblyName>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="NCalc">
-      <HintPath>.\NCalc.dll</HintPath>
-    </Reference>
     <Reference Include="RevitAPI">
       <HintPath>C:\Program Files\Autodesk\Revit 2013\Program\RevitAPI.dll</HintPath>
       <Private>False</Private>
