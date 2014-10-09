@@ -54,7 +54,7 @@ namespace STFExporter
             using (Transaction tx = new Transaction(doc))
             {
                 tx.Start("STF EXPORT");
-                DisplayUnitType meters = DisplayUnitType.DUT_METERS;
+                const DisplayUnitType meters = DisplayUnitType.DUT_METERS;
                 formatOptions.DisplayUnits = meters;
                 // Comment out, different in 2014
                 //formatOptions.Units = meters;
@@ -100,8 +100,9 @@ namespace STFExporter
                 // Space writer                
                 try
                 {
-                    foreach (Space s in fec)
+                    foreach (Element e in fec)
                     {
+                        Space s = e as Space;
                         string roomRNum = "ROOM.R" + increment.ToString();
                         writer += "[" + roomRNum + "]\n";
                         SpaceInfoWriter(s.Id, roomRNum);
@@ -154,11 +155,11 @@ namespace STFExporter
             .OfCategory(BuiltInCategory.OST_LightingFixtures)
             .OfClass(typeof(FamilySymbol));
 
-            foreach (FamilySymbol fs in fecFixtures)
+            foreach (Element e in fecFixtures)
             {
+                FamilySymbol fs = e as FamilySymbol;
                 string load = "";
                 string flux = "";
-                ParameterSet pset = fs.Parameters;
 
                 Parameter pload = fs.get_Parameter(BuiltInParameter.RBS_ELEC_APPARENT_LOAD);
                 Parameter pflux = fs.get_Parameter(BuiltInParameter.FBX_LIGHT_LIMUNOUS_FLUX);
@@ -186,12 +187,9 @@ namespace STFExporter
 
         private string getNumLamps(FamilySymbol fs)
         {
-            string results;
-
             if (fs.LookupParameter("Number of Lamps") != null)
             {
-                results = fs.LookupParameter("Number of Lamps").ToString();
-                return results;
+                return fs.LookupParameter("Number of Lamps").ToString();
             }
             else
             {
@@ -206,7 +204,7 @@ namespace STFExporter
         {
             try
             {
-                const double MAX_ROUNDING_PRECISION = 0.000000000001;
+                //const double MAX_ROUNDING_PRECISION = 0.000000000001;
 
                 // Get info from Space
                 Space roomSpace = _doc.GetElement(spaceID) as Space;
@@ -255,8 +253,9 @@ namespace STFExporter
                 .OfClass(typeof(FamilyInstance));
 
                 int count = 0;
-                foreach (FamilyInstance fi in fec)
+                foreach (Element e in fec)
                 {
+                    FamilyInstance fi = e as FamilyInstance;
                     if (fi.Space != null)
                     {
                         if (fi.Space.Id == spaceID)
@@ -300,7 +299,6 @@ namespace STFExporter
         {
             string furnsOutput = String.Empty;
             // Go through the room and write out the windows/doors
-            Space _space = _doc.GetElement(spaceID) as Space;
 
             // DOORS //
             // Get all doors that have space where id equals current space.
