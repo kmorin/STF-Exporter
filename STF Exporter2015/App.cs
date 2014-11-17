@@ -1,6 +1,7 @@
 #region Namespaces
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using Autodesk.Revit.ApplicationServices;
 using Autodesk.Revit.Attributes;
 using Autodesk.Revit.DB;
@@ -13,9 +14,9 @@ namespace STFExporter
 {
     class App : IExternalApplication
     {
-        static string dir = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
-        static string assyPath = Path.Combine(dir, "STFExporter2015.dll");
-        static string _imgFolder = Path.Combine(dir, "Images");
+        static readonly string dir = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+        static readonly string assyPath = Path.Combine(dir, "STFExporter2015.dll");
+        static readonly string _imgFolder = Path.Combine(dir, "Images");
         
         public Result OnStartup(UIControlledApplication a)
         {
@@ -33,7 +34,7 @@ namespace STFExporter
 
         private void AddRibbonPanel(UIControlledApplication app)
         {
-            RibbonPanel panel = app.CreateRibbonPanel("STF Exporter");
+            RibbonPanel panel = app.CreateRibbonPanel("STF Exporter: v" + Assembly.GetExecutingAssembly().GetName().Version);
 
             PushButtonData pbd_STF = new PushButtonData("STFExport", "Export STF File", assyPath, "STFExporter.Command");
             PushButton pb_STFbutton = panel.AddItem(pbd_STF) as PushButton;
@@ -41,7 +42,8 @@ namespace STFExporter
             pb_STFbutton.ToolTip = "Export Revit Spaces to STF File";
             pb_STFbutton.LongDescription = "Exports Spaces in Revit model to STF file for use in application such as DIALux";
 
-            ContextualHelp contextHelp = new ContextualHelp(ContextualHelpType.ChmFile, dir + "/Resources/STFExporter Help.htm");
+            //ContextualHe/lp contextHelp = new ContextualHelp(ContextualHelpType.ChmFile, dir + "/Resources/STFExporter Help.htm");
+            ContextualHelp contextHelp = new ContextualHelp(ContextualHelpType.Url, "https://github.com/kmorin/STF-Exporter");
 
             pb_STFbutton.SetContextualHelp(contextHelp);
         }

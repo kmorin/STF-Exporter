@@ -1,5 +1,6 @@
 #region Namespaces
 using System;
+using System.Globalization;
 using System.Linq;
 using System.IO;
 using System.Collections.Generic;
@@ -18,6 +19,20 @@ using System.Windows.Forms;
 
 namespace STFExporter
 {
+    /// <summary>
+    /// Default decimal writer
+    /// </summary>
+    public static class DoubleExtensions
+    {
+        public static string ToDecimalString(this double value)
+        {
+            return value.ToString(CultureInfo.GetCultureInfo("en-US"));
+        }
+    }
+
+    /// <summary>
+    /// Command Class
+    /// </summary>
     [Transaction(TransactionMode.Manual)]
     [Regeneration(RegenerationOption.Manual)]
     public class Command : IExternalCommand
@@ -54,7 +69,7 @@ namespace STFExporter
             using (Transaction tx = new Transaction(doc))
             {
                 tx.Start("STF EXPORT");
-                DisplayUnitType meters = DisplayUnitType.DUT_METERS;
+                const DisplayUnitType meters = DisplayUnitType.DUT_METERS;
                 formatOptions.DisplayUnits = meters;
                 // Comment out, different in 2014
                 //formatOptions.Units = meters;
@@ -70,7 +85,7 @@ namespace STFExporter
                     formatOptions.UseDigitGrouping = false;
                     pUnit.DecimalSymbol = DecimalSymbol.Dot;
                 }
-                
+
                 // Filter for only active view.
                 ElementLevelFilter filter = new ElementLevelFilter(doc.ActiveView.GenLevel.Id);
 
@@ -91,7 +106,8 @@ namespace STFExporter
 
                 for (int i = 1; i < numOfRooms + 1; i++)
                 {
-                    writer += "Room" + i.ToString() + "=ROOM.R" + i.ToString() + "\n";
+                    string _dialuxRoomName = "Room" + i.ToString() + "=ROOM.R" + i.ToString();
+                    writer += _dialuxRoomName + "\n";
                 }
 
                 int increment = 1;
@@ -99,10 +115,12 @@ namespace STFExporter
                 // Space writer                
                 try
                 {
-                    foreach (Space s in fec)
+                    foreach (Element e in fec)
                     {
-                        writer += "[ROOM.R" + increment.ToString() + "]\n";
-                        SpaceInfoWriter(s.Id);
+                        Space s = e as Space;
+                        string roomRNum = "ROOM.R" + increment.ToString();
+                        writer += "[" + roomRNum + "]\n";
+                        SpaceInfoWriter(s.Id, roomRNum);
                         increment++;
                     }
 
@@ -152,11 +170,11 @@ namespace STFExporter
             .OfCategory(BuiltInCategory.OST_LightingFixtures)
             .OfClass(typeof(FamilySymbol));
 
-            foreach (FamilySymbol fs in fecFixtures)
+            foreach (Element e in fecFixtures)
             {
+                FamilySymbol fs = e as FamilySymbol;
                 string load = "";
                 string flux = "";
-                ParameterSet pset = fs.Parameters;
 
                 Parameter pload = fs.get_Parameter(BuiltInParameter.RBS_ELEC_APPARENT_LOAD);
                 Parameter pflux = fs.get_Parameter(BuiltInParameter.FBX_LIGHT_LIMUNOUS_FLUX);
@@ -184,12 +202,9 @@ namespace STFExporter
 
         private string getNumLamps(FamilySymbol fs)
         {
-            string results;
-
             if (fs.LookupParameter("Number of Lamps") != null)
             {
-                results = fs.LookupParameter("Number of Lamps").ToString();
-                return results;
+                return fs.LookupParameter("Number of Lamps").ToString();
             }
             else
             {
@@ -200,11 +215,11 @@ namespace STFExporter
             }
         }
 
-        private void SpaceInfoWriter(ElementId spaceID)
+        private void SpaceInfoWriter(ElementId spaceID, string RoomRNum)
         {
             try
             {
-                const double MAX_ROUNDING_PRECISION = 0.000000000001;
+                //const double MAX_ROUNDING_PRECISION = 0.000000000001;
 
                 // Get info from Space
                 Space roomSpace = _doc.GetElement(spaceID) as Space;
@@ -223,8 +238,8 @@ namespace STFExporter
 
                 // Write out Top part of room entry
                 writer += "Name=" + name + "\n"
-                    + "Height=" + height.ToString() + "\n"
-                    + "WorkingPlane=" + workPlane.ToString() + "\n"
+                    + "Height=" + height.ToDecimalString() + "\n"
+                    + "WorkingPlane=" + workPlane.ToDecimalString() + "\n"
                     + "NrPoints=" + numPoints.ToString() + "\n";
 
                 // Write vertices for each point in vertex numbers
@@ -239,7 +254,7 @@ namespace STFExporter
                 double wReflect = roomSpace.WallReflectance;
 
                 // Write out ceiling reflectance
-                writer += "R_Ceiling=" + cReflect.ToString() + "\n";
+                writer += "R_Ceiling=" + cReflect.ToDecimalString() + "\n";
 
                 IList<ElementId> elemIds = roomSpace.GetMonitoredLocalElementIds();
                 foreach (ElementId e in elemIds)
@@ -253,8 +268,9 @@ namespace STFExporter
                 .OfClass(typeof(FamilyInstance));
 
                 int count = 0;
-                foreach (FamilyInstance fi in fec)
+                foreach (Element e in fec)
                 {
+                    FamilyInstance fi = e as FamilyInstance;
                     if (fi.Space != null)
                     {
                         if (fi.Space.Id == spaceID)
@@ -272,7 +288,7 @@ namespace STFExporter
 
                             double rotation = locpt.Rotation;
                             writer += lumName + "=" + fs.Name.Replace(" ", "") + "\n";
-                            writer += lumName + ".Pos=" + X.ToString() + " " + Y.ToString() + " " + Z.ToString() + "\n";
+                            writer += lumName + ".Pos=" + X.ToDecimalString() + " " + Y.ToDecimalString() + " " + Z.ToDecimalString() + "\n";
                             writer += lumName + ".Rot=0 0 0" + "\n"; //need to figure out this rotation; Update: cannot determine. Almost impossible for Dialux
 
                             count++;
@@ -281,13 +297,119 @@ namespace STFExporter
                 }
 
                 // Write out Lums part
-                writer += "NrLums=" + count.ToString() + "\n"
-                    + "NrStruct=0\n" + "NrFurns=0\n";
+                writer += "NrLums=" + count.ToString() + "\n";
+                // Write out Struct part
+                writer += "NrStruct=0\n";
+                // Write out Furn part
+                writer += "NrFurns=" + getFurns(spaceID, RoomRNum);
+
             }
             catch (IndexOutOfRangeException)
             {
                 throw new IndexOutOfRangeException();
             }
+        }
+
+        private string getFurns(ElementId spaceID, string RoomRNum)
+        {
+            string furnsOutput = String.Empty;
+            // Go through the room and write out the windows/doors
+
+            // DOORS //
+            // Get all doors that have space where id equals current space.
+            FilteredElementCollector fecDoors = new FilteredElementCollector(_doc)
+            .OfCategory(BuiltInCategory.OST_Doors)
+            .OfClass(typeof(FamilyInstance));
+
+            // WINDOWS //
+            FilteredElementCollector fecWindows = new FilteredElementCollector(_doc)
+            .OfCategory(BuiltInCategory.OST_Windows)
+            .OfClass(typeof(FamilyInstance));
+
+            List<Element> doorsList = new List<Element>();
+            List<Element> windowList = new List<Element>();
+
+            foreach (Element e in fecDoors)
+            {
+                FamilyInstance fi = e as FamilyInstance;
+                if (fi != null && fi.Space != null && fi.Space.Id == spaceID)
+                    doorsList.Add(fi);
+            }
+
+            foreach (Element e in fecWindows)
+            {
+                FamilyInstance fi = e as FamilyInstance;
+                if (fi != null && fi.Space != null && fi.Space.Id == spaceID)
+                    windowList.Add(fi);
+            }
+
+            //Add Number of Furns to string
+            furnsOutput += (doorsList.Count + windowList.Count).ToString() + "\n";
+
+            // Loop through new list of Doors
+            int furnNumber = 1;
+            foreach (Element e in doorsList)
+            {
+                FamilyInstance fi = e as FamilyInstance;
+                // Door Width (in meters)
+                string doorWidth = (fi.Symbol.get_Parameter(BuiltInParameter.DOOR_WIDTH).AsDouble() * 0.3048).ToDecimalString();
+                // Door height (in meters)
+                string doorHeight = (fi.Symbol.get_Parameter(BuiltInParameter.DOOR_HEIGHT).AsDouble() * 0.3048).ToDecimalString();
+                LocationPoint lp = fi.Location as LocationPoint;
+                XYZ p = new XYZ(lp.Point.X * 0.30, lp.Point.Y * 0.30, 0);
+                //XYZ p = new XYZ(lp.Point.X, lp.Point.Y, 0);
+                string lps = p.ToString().Substring(1, p.ToString().Length - 2);
+                //string lps = lp.Point.ToDecimalString().Substring(1, lp.Point.ToDecimalString().Length - 2);
+
+                string sfurnNumber = "Furn" + furnNumber.ToString();
+                //Furn1=door
+                //Furn1.Ref=ROOM.R1.F1
+                //Furn1.Rot=90.00 0.00 0.00
+                //Furn1.Pos=1.151 3.67 0
+                //Furn1.Size=1.0 2.0 0.0
+                furnsOutput += sfurnNumber + "=door\n";
+                furnsOutput += sfurnNumber + ".Ref=" + RoomRNum + ".F" + furnNumber.ToString() + "\n";
+                // TODO: fix rotation
+                furnsOutput += sfurnNumber + ".Rot=90.00 0.00 0.00" + "\n"; //rotation???
+                // TODO: fix positioning...
+                furnsOutput += sfurnNumber + ".Pos=" + lps + "\n";
+                furnsOutput += sfurnNumber + ".Size=" + doorWidth + " " + doorHeight + " 0.00\n";
+
+                //Inrement furns
+                furnNumber++;
+            }
+
+            // WINDOWS //
+
+            foreach (Element e in fecWindows)
+            {
+                FamilyInstance fi = e as FamilyInstance;
+                // Window Width
+                string windowWidth = (fi.Symbol.get_Parameter(BuiltInParameter.WINDOW_WIDTH).AsDouble() * 0.3048).ToDecimalString();
+                // Window Height
+                string windowHeight = (fi.Symbol.get_Parameter(BuiltInParameter.WINDOW_HEIGHT).AsDouble() * 0.3048).ToDecimalString();
+                LocationPoint lp = fi.Location as LocationPoint;
+                //XYZ p = new XYZ(lp.Point.X * 0.30, lp.Point.Y * 0.30, lp.Point.Z * 0.30);
+                Transform t1 = fi.GetTransform();
+                XYZ p = new XYZ(t1.BasisX.X * 0.30,t1.BasisX.Y*0.30,lp.Point.Z * 0.30);
+                string lps = p.ToString().Substring(1, p.ToString().Length - 2);
+
+                string sFurnNumber = "Furn" + furnNumber.ToString();
+                furnsOutput += sFurnNumber + "=win\n";
+                furnsOutput += sFurnNumber + ".Ref=" + RoomRNum + ".F" + furnNumber.ToString() + "\n";
+                // TODO: fix rotation
+                furnsOutput += sFurnNumber + ".Rot=90.00 0.00 0.00" + "\n"; //rotation???
+                // TODO: fix positioning...
+                furnsOutput += sFurnNumber + ".Pos=" + lps + "\n";
+                furnsOutput += sFurnNumber + ".Size=" + windowWidth + " " + windowHeight + " 0.00\n";
+
+                //Inrement furns
+                furnNumber++;
+
+            }
+
+
+            return furnsOutput;
         }
 
         private List<string> getVertexPoints(Space roomSpace)
@@ -304,8 +426,8 @@ namespace STFExporter
                     //var Y = bs.Curve.get_EndPoint(0).Y * meterMultiplier;
                     var X = bs.Curve.GetEndPoint(0).X * meterMultiplier;
                     var Y = bs.Curve.GetEndPoint(0).Y * meterMultiplier;
-                    
-                    verticies.Add(X.ToString() + " " + Y.ToString());
+
+                    verticies.Add(X.ToDecimalString() + " " + Y.ToDecimalString());
                 }
 
             }
@@ -332,6 +454,6 @@ namespace STFExporter
             }
 
         }
-#endregion
+        #endregion
     }
 }
