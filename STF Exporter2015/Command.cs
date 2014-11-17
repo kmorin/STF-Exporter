@@ -30,6 +30,9 @@ namespace STFExporter
         }
     }
 
+    /// <summary>
+    /// Command Class
+    /// </summary>
     [Transaction(TransactionMode.Manual)]
     [Regeneration(RegenerationOption.Manual)]
     public class Command : IExternalCommand

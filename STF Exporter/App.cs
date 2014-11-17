@@ -1,43 +1,55 @@
-#region Header
-// The MIT License (MIT)
-//
-// Copyright (c) 2013 Kyle T. Morin
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in all
-// copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-// SOFTWARE.
-#endregion
-
 #region Namespaces
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using Autodesk.Revit.ApplicationServices;
 using Autodesk.Revit.Attributes;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
+using System.IO;
+using System.Windows.Media.Imaging;
 #endregion
 
 namespace STFExporter
 {
     class App : IExternalApplication
     {
+        static readonly string dir = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+        static readonly string assyPath = Path.Combine(dir, "STFExporter.dll");
+        static readonly string _imgFolder = Path.Combine(dir, "Images");
+
         public Result OnStartup(UIControlledApplication a)
         {
+            try
+            {
+                AddRibbonPanel(a);
+            }
+            catch (Exception ex)
+            {
+                TaskDialog.Show("Ribbon", ex.ToString());
+            }
+
             return Result.Succeeded;
+        }
+
+        private void AddRibbonPanel(UIControlledApplication app)
+        {
+            RibbonPanel panel = app.CreateRibbonPanel("STF Exporter: v" + Assembly.GetExecutingAssembly().GetName().Version);
+
+            PushButtonData pbd_STF = new PushButtonData("STFExport", "Export STF File", assyPath, "STFExporter.Command");
+            PushButton pb_STFbutton = panel.AddItem(pbd_STF) as PushButton;
+            pb_STFbutton.LargeImage = NewBitmapImage("stfexport.png");
+            pb_STFbutton.ToolTip = "Export Revit Spaces to STF File";
+            pb_STFbutton.LongDescription = "Exports Spaces in Revit model to STF file for use in application such as DIALux";
+
+            ContextualHelp contextHelp = new ContextualHelp(ContextualHelpType.ChmFile, dir + "/Resources/STFExporter Help.htm");
+
+            pb_STFbutton.SetContextualHelp(contextHelp);
+        }
+
+        BitmapImage NewBitmapImage(string imgName)
+        {
+            return new BitmapImage(new Uri(Path.Combine(_imgFolder, imgName)));
         }
 
         public Result OnShutdown(UIControlledApplication a)
