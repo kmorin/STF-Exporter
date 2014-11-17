@@ -1,5 +1,6 @@
 #region Namespaces
 using System;
+using System.Globalization;
 using System.Linq;
 using System.IO;
 using System.Collections.Generic;
@@ -18,6 +19,17 @@ using System.Windows.Forms;
 
 namespace STFExporter
 {
+    /// <summary>
+    /// Default decimal writer
+    /// </summary>
+    public static class DoubleExtensions
+    {
+        public static string ToDecimalString(this double value)
+        {
+            return value.ToString(CultureInfo.GetCultureInfo("en-US"));
+        }
+    }
+
     [Transaction(TransactionMode.Manual)]
     [Regeneration(RegenerationOption.Manual)]
     public class Command : IExternalCommand
@@ -223,8 +235,8 @@ namespace STFExporter
 
                 // Write out Top part of room entry
                 writer += "Name=" + name + "\n"
-                    + "Height=" + height.ToString() + "\n"
-                    + "WorkingPlane=" + workPlane.ToString() + "\n"
+                    + "Height=" + height.ToDecimalString() + "\n"
+                    + "WorkingPlane=" + workPlane.ToDecimalString() + "\n"
                     + "NrPoints=" + numPoints.ToString() + "\n";
 
                 // Write vertices for each point in vertex numbers
@@ -239,7 +251,7 @@ namespace STFExporter
                 double wReflect = roomSpace.WallReflectance;
 
                 // Write out ceiling reflectance
-                writer += "R_Ceiling=" + cReflect.ToString() + "\n";
+                writer += "R_Ceiling=" + cReflect.ToDecimalString() + "\n";
 
                 IList<ElementId> elemIds = roomSpace.GetMonitoredLocalElementIds();
                 foreach (ElementId e in elemIds)
@@ -273,7 +285,7 @@ namespace STFExporter
 
                             double rotation = locpt.Rotation;
                             writer += lumName + "=" + fs.Name.Replace(" ", "") + "\n";
-                            writer += lumName + ".Pos=" + X.ToString() + " " + Y.ToString() + " " + Z.ToString() + "\n";
+                            writer += lumName + ".Pos=" + X.ToDecimalString() + " " + Y.ToDecimalString() + " " + Z.ToDecimalString() + "\n";
                             writer += lumName + ".Rot=0 0 0" + "\n"; //need to figure out this rotation; Update: cannot determine. Almost impossible for Dialux
 
                             count++;
@@ -337,14 +349,14 @@ namespace STFExporter
             {
                 FamilyInstance fi = e as FamilyInstance;
                 // Door Width (in meters)
-                string doorWidth = (fi.Symbol.get_Parameter(BuiltInParameter.DOOR_WIDTH).AsDouble() * 0.3048).ToString();
+                string doorWidth = (fi.Symbol.get_Parameter(BuiltInParameter.DOOR_WIDTH).AsDouble() * 0.3048).ToDecimalString();
                 // Door height (in meters)
-                string doorHeight = (fi.Symbol.get_Parameter(BuiltInParameter.DOOR_HEIGHT).AsDouble() * 0.3048).ToString();
+                string doorHeight = (fi.Symbol.get_Parameter(BuiltInParameter.DOOR_HEIGHT).AsDouble() * 0.3048).ToDecimalString();
                 LocationPoint lp = fi.Location as LocationPoint;
                 XYZ p = new XYZ(lp.Point.X * 0.30, lp.Point.Y * 0.30, 0);
                 //XYZ p = new XYZ(lp.Point.X, lp.Point.Y, 0);
                 string lps = p.ToString().Substring(1, p.ToString().Length - 2);
-                //string lps = lp.Point.ToString().Substring(1, lp.Point.ToString().Length - 2);
+                //string lps = lp.Point.ToDecimalString().Substring(1, lp.Point.ToDecimalString().Length - 2);
 
                 string sfurnNumber = "Furn" + furnNumber.ToString();
                 //Furn1=door
@@ -370,11 +382,13 @@ namespace STFExporter
             {
                 FamilyInstance fi = e as FamilyInstance;
                 // Window Width
-                string windowWidth = (fi.Symbol.get_Parameter(BuiltInParameter.WINDOW_WIDTH).AsDouble() * 0.3048).ToString();
+                string windowWidth = (fi.Symbol.get_Parameter(BuiltInParameter.WINDOW_WIDTH).AsDouble() * 0.3048).ToDecimalString();
                 // Window Height
-                string windowHeight = (fi.Symbol.get_Parameter(BuiltInParameter.WINDOW_HEIGHT).AsDouble() * 0.3048).ToString();
+                string windowHeight = (fi.Symbol.get_Parameter(BuiltInParameter.WINDOW_HEIGHT).AsDouble() * 0.3048).ToDecimalString();
                 LocationPoint lp = fi.Location as LocationPoint;
-                XYZ p = new XYZ(lp.Point.X * 0.30, lp.Point.Y * 0.30, 0);
+                //XYZ p = new XYZ(lp.Point.X * 0.30, lp.Point.Y * 0.30, lp.Point.Z * 0.30);
+                Transform t1 = fi.GetTransform();
+                XYZ p = new XYZ(t1.BasisX.X * 0.30,t1.BasisX.Y*0.30,lp.Point.Z * 0.30);
                 string lps = p.ToString().Substring(1, p.ToString().Length - 2);
 
                 string sFurnNumber = "Furn" + furnNumber.ToString();
@@ -410,7 +424,7 @@ namespace STFExporter
                     var X = bs.Curve.GetEndPoint(0).X * meterMultiplier;
                     var Y = bs.Curve.GetEndPoint(0).Y * meterMultiplier;
 
-                    verticies.Add(X.ToString() + " " + Y.ToString());
+                    verticies.Add(X.ToDecimalString() + " " + Y.ToDecimalString());
                 }
 
             }

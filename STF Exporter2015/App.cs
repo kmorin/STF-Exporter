@@ -1,6 +1,7 @@
 #region Namespaces
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using Autodesk.Revit.ApplicationServices;
 using Autodesk.Revit.Attributes;
 using Autodesk.Revit.DB;
@@ -33,7 +34,7 @@ namespace STFExporter
 
         private void AddRibbonPanel(UIControlledApplication app)
         {
-            RibbonPanel panel = app.CreateRibbonPanel("STF Exporter");
+            RibbonPanel panel = app.CreateRibbonPanel("STF Exporter: v" + Assembly.GetExecutingAssembly().GetName().Version);
 
             PushButtonData pbd_STF = new PushButtonData("STFExport", "Export STF File", assyPath, "STFExporter.Command");
             PushButton pb_STFbutton = panel.AddItem(pbd_STF) as PushButton;
