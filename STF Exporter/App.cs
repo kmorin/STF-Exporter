@@ -42,7 +42,8 @@ namespace STFExporter
             pb_STFbutton.ToolTip = "Export Revit Spaces to STF File";
             pb_STFbutton.LongDescription = "Exports Spaces in Revit model to STF file for use in application such as DIALux";
 
-            ContextualHelp contextHelp = new ContextualHelp(ContextualHelpType.ChmFile, dir + "/Resources/STFExporter Help.htm");
+            //ContextualHelp contextHelp = new ContextualHelp(ContextualHelpType.ChmFile, dir + "/Resources/STFExporter Help.htm");
+            ContextualHelp contextHelp = new ContextualHelp(ContextualHelpType.Url, "https://github.com/kmorin/STF-Exporter");
 
             pb_STFbutton.SetContextualHelp(contextHelp);
         }
