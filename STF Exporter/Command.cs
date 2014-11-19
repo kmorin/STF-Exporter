@@ -86,79 +86,88 @@ namespace STFExporter
                     pUnit.DecimalSymbol = DecimalSymbol.Dot;
                 }
 
-                // Filter for only active view.
-                ElementLevelFilter filter = new ElementLevelFilter(doc.ActiveView.GenLevel.Id);
-
-                FilteredElementCollector fec = new FilteredElementCollector(doc, doc.ActiveView.Id)
-                .OfCategory(BuiltInCategory.OST_MEPSpaces)
-                .WherePasses(filter);
-
-                int numOfRooms = fec.Count();
-                writer += "[VERSION]\n"
-                    + "STFF=" + stfVersionNum + "\n"
-                    + "Progname=Revit\n"
-                    + "Progvers=" + app.VersionNumber + "\n"
-                    + "[Project]\n"
-                    + "Name=" + _doc.ProjectInformation.Name + "\n"
-                    + "Date=" + DateTime.Now.Year.ToString() + "-" + DateTime.Now.Month.ToString() + "-" + DateTime.Now.Day.ToString() + "\n"
-                    + "Operator=" + app.Username + "\n"
-                    + "NrRooms=" + numOfRooms + "\n";
-
-                for (int i = 1; i < numOfRooms + 1; i++)
-                {
-                    string _dialuxRoomName = "Room" + i.ToString() + "=ROOM.R" + i.ToString();
-                    writer += _dialuxRoomName + "\n";
-                }
-
-                int increment = 1;
-
-                // Space writer                
                 try
                 {
-                    foreach (Element e in fec)
+                    // Filter for only active view.
+                    ElementLevelFilter filter = new ElementLevelFilter(doc.ActiveView.GenLevel.Id);
+
+                    FilteredElementCollector fec = new FilteredElementCollector(doc, doc.ActiveView.Id)
+                        .OfCategory(BuiltInCategory.OST_MEPSpaces)
+                        .WherePasses(filter);
+
+                    int numOfRooms = fec.Count();
+                    writer += "[VERSION]\n"
+                              + "STFF=" + stfVersionNum + "\n"
+                              + "Progname=Revit\n"
+                              + "Progvers=" + app.VersionNumber + "\n"
+                              + "[Project]\n"
+                              + "Name=" + _doc.ProjectInformation.Name + "\n"
+                              + "Date=" + DateTime.Now.Year.ToString() + "-" + DateTime.Now.Month.ToString() + "-" +
+                              DateTime.Now.Day.ToString() + "\n"
+                              + "Operator=" + app.Username + "\n"
+                              + "NrRooms=" + numOfRooms + "\n";
+
+                    for (int i = 1; i < numOfRooms + 1; i++)
                     {
-                        Space s = e as Space;
-                        string roomRNum = "ROOM.R" + increment.ToString();
-                        writer += "[" + roomRNum + "]\n";
-                        SpaceInfoWriter(s.Id, roomRNum);
-                        increment++;
+                        string _dialuxRoomName = "Room" + i.ToString() + "=ROOM.R" + i.ToString();
+                        writer += _dialuxRoomName + "\n";
                     }
 
+                    int increment = 1;
 
-                    // Write out Luminaires to bottom
-                    writeLumenairs();
-
-                    // Reset back to original units
-                    formatOptions.DisplayUnits = curUnitType;
-                    if (intlVersion)
-                        pUnit.DecimalSymbol = DecimalSymbol.Comma;
-
-
-                    tx.Commit();
-
-                    SaveFileDialog dialog = new SaveFileDialog
+                    // Space writer                
+                    try
                     {
-                        FileName = doc.ProjectInformation.Name,
-                        Filter = "STF File | *.stf",
-                        FilterIndex = 2,
-                        RestoreDirectory = true
-                    };
-
-                    if (dialog.ShowDialog() == DialogResult.OK)
-                    {
-                        StreamWriter sw = new StreamWriter(dialog.FileName);
-                        string[] ar = writer.Split('\n');
-                        for (int i = 0; i < ar.Length; i++)
+                        foreach (Element e in fec)
                         {
-                            sw.WriteLine(ar[i]);
+                            Space s = e as Space;
+                            string roomRNum = "ROOM.R" + increment.ToString();
+                            writer += "[" + roomRNum + "]\n";
+                            SpaceInfoWriter(s.Id, roomRNum);
+                            increment++;
                         }
-                        sw.Close();
-                    }
 
-                    return Result.Succeeded;
+
+                        // Write out Luminaires to bottom
+                        writeLumenairs();
+
+                        // Reset back to original units
+                        formatOptions.DisplayUnits = curUnitType;
+                        if (intlVersion)
+                            pUnit.DecimalSymbol = DecimalSymbol.Comma;
+
+
+                        tx.Commit();
+
+                        SaveFileDialog dialog = new SaveFileDialog
+                        {
+                            FileName = doc.ProjectInformation.Name,
+                            Filter = "STF File | *.stf",
+                            FilterIndex = 2,
+                            RestoreDirectory = true
+                        };
+
+                        if (dialog.ShowDialog() == DialogResult.OK)
+                        {
+                            StreamWriter sw = new StreamWriter(dialog.FileName);
+                            string[] ar = writer.Split('\n');
+                            for (int i = 0; i < ar.Length; i++)
+                            {
+                                sw.WriteLine(ar[i]);
+                            }
+                            sw.Close();
+                        }
+
+                        return Result.Succeeded;
+                    }
+                    catch (IndexOutOfRangeException)
+                    {
+                        return Result.Failed;
+                    }
                 }
-                catch (IndexOutOfRangeException)
+                catch (NullReferenceException)
                 {
+                    TaskDialog.Show("Incorrect View", "Cannot find Spaces to export.\nMake sure you are in a Floorplan or Ceiling Plan view and Spaces are visible.");
                     return Result.Failed;
                 }
             }
