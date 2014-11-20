@@ -1,9 +1,10 @@
 STF Exporter plugin for Revit to DIALux
 ========================================
+![stf-logo.jpg](https://raw.github.com/kmorin/STF-Exporter/2015dev/STF%20Exporter2015/stf-logo.jpg)
 
-## Revit <--> DIALux interoperability
+### Revit <--> DIALux interoperability
 
-#### Add-in for Revit that exports Spaces along with Light fixtures within those spaces out to the .STF file format used by DIALux software for photometry calculations.
+Add-in for Revit that exports Spaces along with Light fixtures within those spaces out to the .STF file format used by DIALux software for photometry calculations. Work is being performed to bring changes back into Revit to continue the design workflow.
 
 ### To use: 
 	1. Download sourcecode and build solution.
@@ -22,3 +23,5 @@ Example video of workflow: http://www.youtube.com/watch?v=XWg7VH4ChZM
 #### License
 
 STF Exporter is released under the [MIT License](http://opensource.org/licenses/MIT)
+
+Copyright (c) 2014 Kyle Morin
