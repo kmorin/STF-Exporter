@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <Product Id="*" Name="STFExporterInstaller" Language="1033" Version="1.0.0.0" Manufacturer="KTM" UpgradeCode="ae614a5e-6dc7-416c-8c18-2751de7653dc">
+    <Package InstallerVersion="200" Compressed="yes" InstallScope="perUser" />
+
+    <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+    <MediaTemplate />
+
+    <Feature Id="ProductFeature" Title="STFExporter for Revit" Level="1">
+      <ComponentGroupRef Id="ProductComponents" />
+      <ComponentGroupRef Id="ProductComponents2017"/>
+      <ComponentRef Id="componentremovefolderstwentysixteen"/>
+    </Feature>
+  </Product>
+
+  <Fragment>
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFilesFolder">
+        <Directory Id="APPLICATIONROOTDIRECTORY" Name="STFExporter for Revit" />
+      </Directory>
+      <Directory Id="AppDataFolder" Name="AppData">
+        <Directory Id="Autodesk" Name="Autodesk">
+          <Directory Id="Revit" Name="Revit">
+            <Directory Id="Addins" Name="Addins">
+              <Directory Id="twentysixteen" Name="2016">                
+              </Directory>
+              <Directory Id="twentyseventeen" Name="2017">                
+              </Directory>
+            </Directory>
+          </Directory>
+        </Directory>
+      </Directory>
+    </Directory>
+
+    <!--<Feature Id="Files_2016" Title="2016 Files">
+      <ComponentGroupRef Id="Files2016"/>
+    </Feature>
+    <Feature Id="Files_2017" Title="2017 Files">
+      <ComponentGroupRef Id="Files2017"/>
+    </Feature>-->
+
+      <Component Id="componentremovefolderstwentysixteen" Guid="{34B2CD10-9FFF-4DEC-A5A2-CE1D66016940}" Directory="Addins">
+        <RegistryValue Root="HKCU" Key="Software\[Manufacturer]\STF" Type="string" Value="1" KeyPath="yes"/>
+        <RemoveFolder Id="this" On="uninstall" Directory="Autodesk" />
+        <RemoveFolder Id="this2" On="uninstall" Directory="Addins"/>
+        <RemoveFolder Id="this3" On="uninstall" Directory="Revit" />
+        <RemoveFolder Id="tsix" On="uninstall" Directory="twentysixteen"/>
+        <RemoveFolder Id="tsev" On="uninstall" Directory="twentyseventeen"/>
+      </Component>
+  </Fragment>
+
+  <Fragment>
+      <ComponentGroup Id="ProductComponents" Directory="twentysixteen">
+        <Component Id="STFExporter2016.dll" Guid="1BD1306C-A5AE-486A-846C-E35E1709AB32">
+          <RegistryValue Root="HKCU" Key="Software\[Manufacturer]\STF" Type="string" Value="1" KeyPath="yes"/>
+          <File Id="STFExporter2016.dll" Source="$(var.STF Exporter2016.TargetPath)" />
+        </Component>
+        <Component Id="STFExporter2016.addin" Guid="424EA9A0-BF90-488E-94D6-BBB69192FBCE">
+          <RegistryValue Root="HKCU" Key="Software\[Manufacturer]\STF" Type="string" Value="1" KeyPath="yes"/>
+          <File Id="STFExporter2016.addin" Source="$(var.STF Exporter2016.TargetDir)\STF Exporter2016.addin" />
+        </Component>
+      </ComponentGroup>
+    <ComponentGroup Id="ProductComponents2017" Directory="twentyseventeen">
+        <Component Id="STFExporter2017.dll" Guid="F3E04ED0-FC1D-49BB-9A4E-CBBCF9EDCC13">
+          <RegistryValue Root="HKCU" Key="Software\[Manufacturer]\STF" Type="string" Value="1" KeyPath="yes"/>
+          <File Id="STFExporter2017.dll" Source="$(var.STF Exporter2017.TargetPath)" />        
+        </Component>
+        <Component Id="STFExporter2017.addin" Guid="7BF019EC-1E0D-4440-9447-D027B081A0EE">
+          <RegistryValue Root="HKCU" Key="Software\[Manufacturer]\STF" Type="string" Value="1" KeyPath="yes"/>
+          <File Id="STFExporter2017.addin" Source="$(var.STF Exporter2017.TargetDir)\STF Exporter2017.addin" />
+        </Component>
+    </ComponentGroup>
+  </Fragment>
+</Wix>
