@@ -1,18 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
-  <Product Id="*" Name="STFExporterInstaller" Language="1033" Version="1.0.0.0" Manufacturer="KTM" UpgradeCode="ae614a5e-6dc7-416c-8c18-2751de7653dc">
+  
+  <?define ProductVersion="1.0.0"?>
+  <Product Id="*" Name="STFExporter v$(var.ProductVersion)" Language="1033" Version="$(var.ProductVersion)" Manufacturer="KTM" UpgradeCode="ae614a5e-6dc7-416c-8c18-2751de7653dc">
     <Package InstallerVersion="200" Compressed="yes" InstallScope="perUser" />
 
     <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
-    <MediaTemplate />
+    <!--<MediaTemplate />-->
 
     <Feature Id="ProductFeature" Title="STFExporter for Revit" Level="1">
       <ComponentGroupRef Id="ProductComponents" />
       <ComponentGroupRef Id="ProductComponents2017"/>
       <ComponentRef Id="componentremovefolderstwentysixteen"/>
     </Feature>
+  
+  <Media Id="1" Cabinet="cab1.cab" EmbedCab="yes"/>
   </Product>
 
+  
+    
   <Fragment>
     <Directory Id="TARGETDIR" Name="SourceDir">
       <Directory Id="ProgramFilesFolder">
